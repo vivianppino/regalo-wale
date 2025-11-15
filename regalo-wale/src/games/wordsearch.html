@@ -1,0 +1,313 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivia - Nosotros Dos</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .trivia-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .trivia-progress {
+            font-size: 1.2rem;
+            color: #8b4513;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .trivia-box {
+            background-color: rgba(139, 69, 19, 0.1);
+            border: 3px solid #8b4513;
+            border-radius: 1rem;
+            padding: 2rem;
+            width: 100%;
+        }
+
+        .trivia-question {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #8b4513;
+            margin-bottom: 2rem;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .trivia-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .trivia-option {
+            padding: 1rem;
+            background-color: #f5f5dc;
+            border: 2px solid #8b4513;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .trivia-option:hover:not(:disabled) {
+            background-color: #ffd700;
+            transform: translateX(5px);
+            border-color: #b22222;
+        }
+
+        .trivia-option:disabled {
+            cursor: not-allowed;
+        }
+
+        .trivia-option.correct {
+            background-color: #228b22;
+            color: white;
+            border-color: #1a6b1a;
+        }
+
+        .trivia-option.incorrect {
+            background-color: #b22222;
+            color: white;
+            border-color: #8b1a1a;
+        }
+
+        .feedback-message {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .feedback-message.correct {
+            background-color: rgba(34, 139, 34, 0.2);
+            color: #228b22;
+            display: block;
+        }
+
+        .feedback-message.incorrect {
+            background-color: rgba(178, 34, 34, 0.2);
+            color: #b22222;
+            display: block;
+        }
+
+        .completion-message {
+            display: none;
+            text-align: center;
+            font-size: 1.5rem;
+            color: #228b22;
+            font-weight: bold;
+            margin: 1rem 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-next {
+            background-color: #228b22;
+            color: white;
+            display: none;
+        }
+
+        .btn-next:hover {
+            background-color: #1a6b1a;
+        }
+
+        .btn-complete {
+            background-color: #228b22;
+            color: white;
+            display: none;
+        }
+
+        .btn-complete:hover {
+            background-color: #1a6b1a;
+        }
+
+        .btn-back {
+            background-color: #8b4513;
+            color: white;
+        }
+
+        .btn-back:hover {
+            background-color: #654321;
+        }
+
+        .score-display {
+            font-size: 1.3rem;
+            color: #228b22;
+            font-weight: bold;
+            text-align: center;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1> Trivia - Nosotros Dos </h1>
+    </header>
+    <main>
+        <div class="trivia-container">
+            <div class="trivia-progress" id="progress">Pregunta 1 de 3</div>
+            <div class="score-display" id="score-display">Correctas: <span id="correct-count">0</span>/3</div>
+
+            <div class="trivia-box" id="trivia-box">
+                <div class="trivia-question" id="question"></div>
+                <div class="trivia-options" id="options"></div>
+                <div class="feedback-message" id="feedback"></div>
+            </div>
+
+            <div class="completion-message" id="completion-message">
+                ¡Completaste el trivia! 
+            </div>
+
+            <div class="controls">
+                <button class="btn-next" id="btn-next">Siguiente Pregunta</button>
+                <button class="btn-complete" id="btn-complete">Volver a los juegos</button>
+                <button class="btn-back" id="btn-back">Atrás</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const questions = [
+            {
+                question: "¿En qué fecha comenzamos a pololear?",
+                options: ["12 de mayo del 2021", "14 de febrero del 2021", "20 de julio del 2020", "3 de octubre del 2022"],
+                correct: 0
+            },
+            {
+                question: "¿Cuál es mi animal favorito?",
+                options: ["Perros", "Gatos", "Pájaros", "Peces"],
+                correct: 1
+            },
+            {
+                question: "¿Qué canto te encanta que cante?",
+                options: ["Reggaeton", "Afortunada", "Rock", "Jazz"],
+                correct: 1
+            }
+        ];
+
+        let currentQuestion = 0;
+        let correctAnswers = 0;
+        let answered = false;
+
+        const questionEl = document.getElementById('question');
+        const optionsEl = document.getElementById('options');
+        const feedbackEl = document.getElementById('feedback');
+        const progressEl = document.getElementById('progress');
+        const correctCountEl = document.getElementById('correct-count');
+        const btnNext = document.getElementById('btn-next');
+        const btnComplete = document.getElementById('btn-complete');
+        const btnBack = document.getElementById('btn-back');
+        const completionMessage = document.getElementById('completion-message');
+        const triviaBox = document.getElementById('trivia-box');
+
+        function loadQuestion() {
+            answered = false;
+            feedbackEl.className = 'feedback-message';
+            feedbackEl.textContent = '';
+            btnNext.style.display = 'none';
+            btnComplete.style.display = 'none';
+            triviaBox.style.display = 'block';
+            completionMessage.style.display = 'none';
+
+            const q = questions[currentQuestion];
+            questionEl.textContent = q.question;
+            optionsEl.innerHTML = '';
+            progressEl.textContent = `Pregunta ${currentQuestion + 1} de ${questions.length}`;
+
+            q.options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'trivia-option';
+                btn.textContent = option;
+                btn.addEventListener('click', () => answerQuestion(index));
+                optionsEl.appendChild(btn);
+            });
+        }
+
+        function answerQuestion(index) {
+            if (answered) return;
+            answered = true;
+
+            const q = questions[currentQuestion];
+            const isCorrect = index === q.correct;
+
+            const buttons = document.querySelectorAll('.trivia-option');
+            buttons.forEach((btn, i) => {
+                btn.disabled = true;
+                if (i === q.correct) {
+                    btn.classList.add('correct');
+                } else if (i === index && !isCorrect) {
+                    btn.classList.add('incorrect');
+                }
+            });
+
+            if (isCorrect) {
+                correctAnswers++;
+                correctCountEl.textContent = correctAnswers;
+                feedbackEl.className = 'feedback-message correct';
+                feedbackEl.textContent = ' ¡Correcto! ';
+            } else {
+                feedbackEl.className = 'feedback-message incorrect';
+                feedbackEl.textContent = ' Incorrecto, mejor suerte en la siguiente';
+            }
+
+            if (currentQuestion < questions.length - 1) {
+                btnNext.style.display = 'inline-block';
+            } else {
+                setTimeout(() => {
+                    triviaBox.style.display = 'none';
+                    completionMessage.style.display = 'block';
+                    btnComplete.style.display = 'inline-block';
+                    updateGameStatus();
+                }, 1500);
+            }
+        }
+
+        function updateGameStatus() {
+            const completed = JSON.parse(sessionStorage.getItem('games-completed') || ''"{\"puzzle\": false, \"wordsearch\": false, \"quiz\": false}"'');
+            completed.wordsearch = true;
+            sessionStorage.setItem('games-completed', JSON.stringify(completed));
+        }
+
+        btnNext.addEventListener('click', () => {
+            currentQuestion++;
+            loadQuestion();
+        });
+
+        btnComplete.addEventListener('click', () => {
+            window.location.href = '../index.html';
+        });
+
+        btnBack.addEventListener('click', () => {
+            window.location.href = '../index.html';
+        });
+
+        loadQuestion();
+    </script>
+</body>
+</html>

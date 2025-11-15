@@ -1,0 +1,265 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Memoria - Gatitos</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .memory-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .memory-stats {
+            display: flex;
+            gap: 3rem;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #8b4513;
+            font-weight: bold;
+        }
+
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            max-width: 550px;
+            margin: 2rem 0;
+        }
+
+        .memory-card {
+            width: 110px;
+            height: 110px;
+            background: linear-gradient(135deg, #b22222 0%, #8b1a1a 100%);
+            border: 3px solid #654321;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            transition: all 0.3s;
+            user-select: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight: bold;
+        }
+
+        .memory-card:hover:not(.matched):not(.flipped) {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .memory-card.flipped {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+        }
+
+        .memory-card.matched {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        .completion-message {
+            display: none;
+            text-align: center;
+            font-size: 1.5rem;
+            color: #228b22;
+            font-weight: bold;
+            margin: 1rem 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+
+        .btn-reset {
+            background-color: #b22222;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background-color: #8b1a1a;
+        }
+
+        .btn-complete {
+            background-color: #228b22;
+            color: white;
+            display: none;
+        }
+
+        .btn-complete:hover {
+            background-color: #1a6b1a;
+        }
+
+        .btn-back {
+            background-color: #8b4513;
+            color: white;
+        }
+
+        .btn-back:hover {
+            background-color: #654321;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1> Juego de Memoria - Gatitos </h1>
+    </header>
+    <main>
+        <div class="memory-container">
+            <p style="font-size: 1.1rem; color: #8b4513; text-align: center;">
+                ¡Encuentra todos los pares de gatitos! Haz clic en las tarjetas para voltearlas.
+            </p>
+
+            <div class="memory-stats">
+                <div>Pares encontrados: <span id="matches">0</span>/8</div>
+                <div>Intentos: <span id="attempts">0</span></div>
+            </div>
+
+            <div class="memory-grid" id="memory-grid"></div>
+
+            <div class="completion-message" id="completion-message">
+                ¡Excelente! ¡Encontraste todos los pares! 
+            </div>
+
+            <div class="controls">
+                <button class="btn-reset" id="btn-reset">Reiniciar</button>
+                <button class="btn-complete" id="btn-complete">Volver a los juegos</button>
+                <button class="btn-back" id="btn-back">Atrás</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const catEmojis = ['🌟', '🌟', '�', '�', '✨', '✨', '🎀', '🎀', '�', '�', '🎊', '🎊', '�', '�', '🌹', '🌹'];
+        
+        let cards = [];
+        let flipped = [];
+        let matched = [];
+        let attempts = 0;
+        let gameActive = true;
+
+        const memoryGrid = document.getElementById('memory-grid');
+        const matchesSpan = document.getElementById('matches');
+        const attemptsSpan = document.getElementById('attempts');
+        const completionMessage = document.getElementById('completion-message');
+        const btnReset = document.getElementById('btn-reset');
+        const btnComplete = document.getElementById('btn-complete');
+        const btnBack = document.getElementById('btn-back');
+
+        function initGame() {
+            memoryGrid.innerHTML = '';
+            cards = [];
+            flipped = [];
+            matched = [];
+            attempts = 0;
+            gameActive = true;
+            matchesSpan.textContent = '0';
+            attemptsSpan.textContent = '0';
+            completionMessage.style.display = 'none';
+            btnComplete.style.display = 'none';
+
+            const shuffled = [...catEmojis].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach((emoji, index) => {
+                const card = document.createElement('div');
+                card.className = 'memory-card';
+                card.dataset.index = index;
+                card.dataset.emoji = emoji;
+                card.textContent = '?';
+                card.style.cursor = 'pointer';
+                
+                card.addEventListener('click', function() {
+                    flipCard(index);
+                });
+                
+                memoryGrid.appendChild(card);
+                cards.push({ element: card, emoji: emoji });
+            });
+        }
+
+        function flipCard(index) {
+            if (!gameActive) return;
+            if (flipped.includes(index)) return;
+            if (matched.includes(index)) return;
+
+            const card = cards[index];
+            card.element.classList.add('flipped');
+            card.element.textContent = card.emoji;
+            flipped.push(index);
+
+            if (flipped.length === 2) {
+                gameActive = false;
+                attempts++;
+                attemptsSpan.textContent = attempts;
+
+                setTimeout(() => {
+                    checkMatch();
+                }, 600);
+            }
+        }
+
+        function checkMatch() {
+            const [idx1, idx2] = flipped;
+            const emoji1 = cards[idx1].emoji;
+            const emoji2 = cards[idx2].emoji;
+
+            if (emoji1 === emoji2) {
+                cards[idx1].element.classList.add('matched');
+                cards[idx2].element.classList.add('matched');
+                matched.push(idx1, idx2);
+                matchesSpan.textContent = (matched.length / 2).toString();
+
+                if (matched.length === cards.length) {
+                    completionMessage.style.display = 'block';
+                    btnComplete.style.display = 'inline-block';
+                    updateGameStatus();
+                }
+            } else {
+                cards[idx1].element.classList.remove('flipped');
+                cards[idx2].element.classList.remove('flipped');
+                cards[idx1].element.textContent = '?';
+                cards[idx2].element.textContent = '?';
+            }
+
+            flipped = [];
+            gameActive = true;
+        }
+
+        function updateGameStatus() {
+            const completed = JSON.parse(sessionStorage.getItem('games-completed') || '{"puzzle": false, "wordsearch": false, "quiz": false}');
+            completed.puzzle = true;
+            sessionStorage.setItem('games-completed', JSON.stringify(completed));
+        }
+
+        btnReset.addEventListener('click', initGame);
+        btnComplete.addEventListener('click', () => {
+            window.location.href = '../index.html';
+        });
+        btnBack.addEventListener('click', () => {
+            window.location.href = '../index.html';
+        });
+
+        initGame();
+    </script>
+</body>
+</html>

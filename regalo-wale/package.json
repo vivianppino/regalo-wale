@@ -1,0 +1,16 @@
+{
+  "name": "regalo-wale",
+  "version": "1.0.0",
+  "description": "A web application featuring mini-games and a surprise page.",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "live-server src",
+    "build": "echo 'Build step not defined'"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "live-server": "^1.2.1"
+  },
+  "author": "",
+  "license": "ISC"
+}
